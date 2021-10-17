@@ -55,7 +55,8 @@ public class SkyGridGenerator extends ChunkGenerator {
             Material.WALL_BANNER,
             Material.BOOK,
             Material.ENCHANTED_BOOK,
-            Material.WRITTEN_BOOK
+            Material.WRITTEN_BOOK,
+            Material.MONSTER_EGG
     );
 
     /**
