@@ -130,13 +130,13 @@ public class SkyGridGenerator extends ChunkGenerator {
         this.spawnerPopulator = new SpawnerPopulator();
     }
 
-    private void generatePlatform(World world, byte[] bytes, Random random, int y) {
+    private void generatePlatform(byte[] bytes, int y) {
         for (int z = 0; z < 16; z++)
             for (int x = 0; x < 16; x++)
                 bytes[(x * 16 + z) * 256 + y] = (byte) Material.GLASS.getId();
     }
 
-    private void generateSurface(World world, byte[] bytes, Random random, int y) {
+    private void generateSurface(byte[] bytes, Random random, int y) {
         for (int z = 0; z < 16; z += 4)
             for (int x = 0; x < 16; x += 4)
                 bytes[(x * 16 + z) * 256 + y] = (byte) SkyGridGenerator.BLOCKS[random.nextInt(SkyGridGenerator.BLOCKS.length)].getId();
@@ -149,9 +149,9 @@ public class SkyGridGenerator extends ChunkGenerator {
 
         for (int y = 0; y < world.getMaxHeight(); y += 4) {
             if (surface && y == world.getMaxHeight() - 4)
-                generatePlatform(world, result, random, y);
+                generatePlatform(result, y);
             else
-                generateSurface(world, result, random, y);
+                generateSurface(result, random, y);
         }
         return result;
     }
