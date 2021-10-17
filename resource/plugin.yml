@@ -1,0 +1,5 @@
+name: SkyGrid
+version: 1.0
+author: MrCubee
+main: fr.mrcubee.skygrid.SkyGrid
+load: startup
