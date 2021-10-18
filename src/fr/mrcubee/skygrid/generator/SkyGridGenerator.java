@@ -45,7 +45,6 @@ public class SkyGridGenerator extends ChunkGenerator {
             Material.BEACON,
             Material.BREWING_STAND,
             Material.BREWING_STAND_ITEM,
-            Material.ENCHANTMENT_TABLE,
             Material.BARRIER,
             Material.BED_BLOCK,
             Material.DRAGON_EGG,
