@@ -40,7 +40,9 @@ public class ContainerPopulator extends BlockPopulator {
     }
 
     @Override
-    public void populate(World world, Random random, Chunk chunk) {
+    public void populate(World world, Random randomSeed, Chunk chunk) {
+        Random random = new Random();
+
         for (int y = 0; y < world.getMaxHeight(); y += 4)
             populateSurface(random, chunk, y);
     }

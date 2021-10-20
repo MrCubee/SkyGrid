@@ -143,7 +143,8 @@ public class SkyGridGenerator extends ChunkGenerator {
     }
 
     @Override
-    public byte[] generate(World world, Random random, int chunkX, int chunkZ) {
+    public byte[] generate(World world, Random randomSeed, int chunkX, int chunkZ) {
+        Random random = new Random();
         byte[] result = new byte[16 * 16 * 256];
         boolean surface = Math.abs(chunkX) <= 1 && Math.abs(chunkZ) <= 1;
 
