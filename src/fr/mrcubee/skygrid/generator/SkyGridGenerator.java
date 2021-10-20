@@ -88,7 +88,8 @@ public class SkyGridGenerator extends ChunkGenerator {
             Material.SIGN,
             Material.BANNER,
             Material.LADDER,
-            Material.VINE
+            Material.VINE,
+            Material.SAPLING
     );
 
     /**
@@ -158,8 +159,10 @@ public class SkyGridGenerator extends ChunkGenerator {
     }
 
     @Override
-    public Location getFixedSpawnLocation(World world, Random random) {
-        return new Location(world, 0, world.getMaxHeight() - 3, 0);
+    public Location getFixedSpawnLocation(World world, Random randomSeed) {
+        Random random = new Random();
+
+        return new Location(world, 0, world.getMaxHeight() - 2, 0);
     }
 
     @Override
