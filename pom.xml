@@ -7,11 +7,11 @@
     <groupId>fr.mrcubee.minecraft.plugin</groupId>
     <artifactId>skygrid</artifactId>
     <version>1.0</version>
-    <url>https://github.com/MrCubee/SkyGrid</url>
     <packaging>jar</packaging>
 
     <name>SkyGrid</name>
     <description>SkyGrid World Generator is a challenging survival map for Minecraft in the style of SkyBlock. It’s formed out of a grid of random environmental blocks, with a gridlength of 4 meters. There are no rules, make whatever goals you want.</description>
+    <url>https://github.com/MrCubee/SkyGrid</url>
 
     <organization>
         <name>MrCubee</name>
@@ -32,20 +32,25 @@
         <url>https://github.com/MrCubee/SkyGrid/issues</url>
     </issueManagement>
 
-    <distributionManagement>
-        <repository>
-            <id>mrcubee-public</id>
-            <url>http://nexus.mrcubee.net/repository/minecraft/</url>
-            <uniqueVersion>false</uniqueVersion>
-        </repository>
-    </distributionManagement>
-
     <repositories>
         <repository>
             <id>mrcubee-public</id>
-            <url>http://nexus.mrcubee.net/repository/minecraft/</url>
+            <url>https://nexus.mrcubee.net/repository/minecraft/</url>
         </repository>
     </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>mrcubee-public</id>
+            <url>https://nexus.mrcubee.net/repository/minecraft/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
 
     <dependencies>
         <dependency>
@@ -58,15 +63,19 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+        <!--suppress UnresolvedMavenProperty -->
+        <commit.version>${git.branch.name}-${git.commit.last.sha1_short}</commit.version>
+        <plugin.version>${project.version} (git ${commit.version})</plugin.version>
     </properties>
 
     <build>
         <defaultGoal>clean install</defaultGoal>
-        <sourceDirectory>src</sourceDirectory>
-        <finalName>${pom.artifactId}-noShade</finalName>
+        <finalName>${pom.artifactId}</finalName>
         <resources>
             <resource>
-                <directory>resource</directory>
+                <directory>src/main/resources</directory>
                 <filtering>true</filtering>
             </resource>
         </resources>
@@ -75,36 +84,36 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
-                <configuration>
-                    <source>8</source>
-                    <target>8</target>
-                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>fr.mrcubee.maven</groupId>
+                <artifactId>gitplugin</artifactId>
+                <version>1.1</version>
+                <executions>
+                    <execution>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>parse</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.4</version>
+                <artifactId>maven-assembly-plugin</artifactId>
                 <executions>
                     <execution>
                         <phase>package</phase>
                         <goals>
-                            <goal>shade</goal>
+                            <goal>single</goal>
                         </goals>
+                        <configuration>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                        </configuration>
                     </execution>
                 </executions>
-                <configuration>
-                    <createDependencyReducedPom>false</createDependencyReducedPom>
-                    <shadedArtifactAttached>false</shadedArtifactAttached>
-                    <finalName>${pom.artifactId}</finalName>
-                    <filters>
-                        <filter>
-                            <artifact>*:*</artifact>
-                            <excludes>
-                                <exclude>META-INF/</exclude>
-                            </excludes>
-                        </filter>
-                    </filters>
-                </configuration>
             </plugin>
         </plugins>
     </build>
