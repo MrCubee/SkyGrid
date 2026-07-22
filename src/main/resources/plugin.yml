@@ -1,7 +1,8 @@
-name: ${project.name}
-description: ${project.description}
-website: ${project.url}
-version: ${plugin.version}
-authors: [${git.branch.authors}]
+name: ${name}
+description: ${description}
+website: https://github.com/MrCubee/Skygrid
+version: ${version}
+author: MrCubee
 main: fr.mrcubee.skygrid.SkyGrid
+api-version: 26.2
 load: STARTUP

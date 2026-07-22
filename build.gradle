@@ -1,0 +1,74 @@
+plugins {
+    id 'java'
+}
+
+group = 'fr.mrcubee.minecraft.plugin'
+version = '1.0'
+description = "SkyGrid World Generator is a challenging survival map for Minecraft in the style of SkyBlock. It's formed out of a grid of random environmental blocks, with a gridlength of 4 meters. There are no rules, make whatever goals you want."
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url = 'https://hub.spigotmc.org/nexus/content/groups/public/'
+
+        content {
+            includeGroup 'org.bukkit'
+            includeGroup 'org.spigotmc'
+        }
+     }
+     mavenLocal()
+}
+
+dependencies {
+    compileOnly 'org.spigotmc:spigot:26.2-R0.1-SNAPSHOT'
+}
+
+ext.getGitInfo = {
+    if (ext.has('gitInfoCache')) return ext.gitInfoCache
+
+    def run = {List<String> cmd ->
+        try {
+            def process = new ProcessBuilder(cmd).directory(rootDir).redirectErrorStream(true).start()
+
+            process.waitFor()
+            return process.inputStream.text.trim()
+        } catch (ignored) { return '' }
+    }
+
+    def commit = run(['git','rev-parse','--short=8','HEAD'])
+    def dirty  = run(['git','status','--porcelain'])
+    def branch = run(['git','rev-parse','--abbrev-ref','HEAD'])
+
+    ext.gitInfoCache = [
+        commit: commit ?: 'unknown',
+        branch: branch ?: 'unknown',
+        dirty : dirty ? '-dirty' : ''
+    ]
+}
+
+processResources {
+    def git = rootProject.ext.getGitInfo()
+
+    filesMatching('plugin.yml') {
+        expand(
+                name: rootProject.name,
+                description: project.description,
+                version: "${project.version}+${git.branch}-${git.commit}${git.dirty}"
+        )
+    }
+}
+
+jar {
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+
+    exclude "**/META-INF/**"
+}
