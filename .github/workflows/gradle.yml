@@ -20,8 +20,9 @@ jobs:
 
       - name: Read version
         id: version
-        if: github.ref == 'refs/heads/main'
-        run: echo "value=$(grep -oP "version = '\K[^']+" build.gradle)" >> "$GITHUB_OUTPUT"
+        run: |
+          VERSION=$(grep -oP "version = '\K[^']+" build.gradle)
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Upload Skygrid artifact
         uses: actions/upload-artifact@v7.0.1
@@ -32,6 +33,7 @@ jobs:
 
       - name: Send to Discord
         uses: tsickert/discord-webhook@v7.0.0
+        if: github.ref == 'refs/heads/master'
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
           content: "🚀 **SkyGrid ${{ steps.version.outputs.value }}** sur la branche ${{ github.ref_name }} est disponible !"
