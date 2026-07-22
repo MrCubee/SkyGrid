@@ -14,9 +14,25 @@ jobs:
           push: never
           runCmd: ./gradlew --no-daemon build
 
+      - name: Locate artifact
+        id: jar
+        run: echo "path=$(ls build/libs/*.jar | head -n1)" >> "$GITHUB_OUTPUT"
+
+      - name: Read version
+        id: version
+        if: github.ref == 'refs/heads/main'
+        run: echo "value=$(grep -oP "version = '\K[^']+" build.gradle)" >> "$GITHUB_OUTPUT"
+
       - name: Upload Skygrid artifact
         uses: actions/upload-artifact@v7.0.1
         if: success()
         with:
           name: skygrid
-          path: build/libs/*.jar
+          path: ${{ steps.jar.outputs.path }}
+
+      - name: Send to Discord
+        uses: tsickert/discord-webhook@v7.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+          content: "🚀 **SkyGrid ${{ steps.version.outputs.value }}** sur la branche ${{ github.ref_name }} est disponible !"
+          filename: ${{ steps.jar.outputs.path }}
