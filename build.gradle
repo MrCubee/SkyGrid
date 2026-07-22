@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'fr.mrcubee.minecraft.plugin'
-version = '1.0'
+version = '1.2'
 description = "SkyGrid World Generator is a challenging survival map for Minecraft in the style of SkyBlock. It's formed out of a grid of random environmental blocks, with a gridlength of 4 meters. There are no rules, make whatever goals you want."
 
 java {
