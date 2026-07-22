@@ -189,11 +189,11 @@ public class SkyGridGenerator extends ChunkGenerator {
         this.spawnerPopulator = new SpawnerPopulator();
     }
 
-    private void generatePlatform(final ChunkData chunkData, final int y) {
-        for (int z = 0; z < 16; z++)
-            for (int x = 0; x < 16; x++)
-                chunkData.setBlock(x, y, z, Material.GLASS);
-    }
+//    private void generatePlatform(final ChunkData chunkData, final int y) {
+//        for (int z = 0; z < 16; z++)
+//            for (int x = 0; x < 16; x++)
+//                chunkData.setBlock(x, y, z, Material.GLASS);
+//    }
 
     private void generateSkygridBlock(final ChunkData chunkData, final Material material, final int x, final int y, final int z) {
         final BlockData blockData = material.createBlockData();
@@ -227,13 +227,14 @@ public class SkyGridGenerator extends ChunkGenerator {
     @Override
     public void generateNoise(final WorldInfo worldInfo, final Random randomSeed, final int chunkX, final int chunkZ, final ChunkData chunkData) {
         final Random random = new Random();
-        final boolean surface = Math.abs(chunkX) <= 1 && Math.abs(chunkZ) <= 1;
+//        final boolean surface = Math.abs(chunkX) <= 1 && Math.abs(chunkZ) <= 1;
         
         for (int y = 0; y < worldInfo.getMaxHeight(); y += 4) {
-            if (surface && y == worldInfo.getMaxHeight() - 4)
-                generatePlatform(chunkData, y);
-            else
-                generateSkyGrid(chunkData, random, y);
+//            if (surface && y == worldInfo.getMaxHeight() - 4)
+//                generatePlatform(chunkData, y);
+//            else
+//                generateSkyGrid(chunkData, random, y);
+            generateSkyGrid(chunkData, random, y);
         }
     }
 
