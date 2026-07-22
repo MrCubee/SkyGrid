@@ -86,19 +86,18 @@ public class SkyGridGenerator extends ChunkGenerator {
     private static final List<Material> BAN_BLOCK_LIST = Arrays.asList(
             Material.AIR,
             Material.BEDROCK,
-            Material.WATER,
-            Material.LAVA,
+//            Material.WATER,
+//            Material.LAVA,
             Material.BEACON,
-            Material.BREWING_STAND,
             Material.BARRIER,
             Material.DRAGON_EGG,
             Material.FIRE,
-            Material.BOOK,
             Material.ENCHANTED_BOOK,
             Material.WRITTEN_BOOK,
             Material.TRIAL_SPAWNER,
             Material.VAULT,
-            Material.END_PORTAL
+            Material.END_PORTAL,
+            Material.COMMAND_BLOCK_MINECART
     );
 
     /**
