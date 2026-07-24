@@ -1,9 +1,11 @@
 package fr.mrcubee.skygrid.generator;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.bukkit.Location;
@@ -23,18 +25,34 @@ import fr.mrcubee.skygrid.generator.populator.ContainerPopulator;
 import fr.mrcubee.skygrid.generator.populator.SpawnerPopulator;
 
 /**
+ * Chunk generator producing a SkyGrid world, a single random block every
+ * 4 blocks on all three axes, surrounded by air.
+ *
  * @author MrCubee
  * @since 1.0
  */
 public class SkyGridGenerator extends ChunkGenerator {
 
-    private static Stream<Material> byName(final String... names) {
+    /**
+     * Resolves material names, silently skipping those absent from the running
+     * server version.
+     *
+     * @param names material names to resolve
+     * @return the materials that exist on this server
+     */
+    private static EnumSet<Material> byName(final String... names) {
         return Stream.of(names)
         .map(Material::matchMaterial)
-        .filter(Objects::nonNull);
+        .filter(Objects::nonNull)
+        .collect(Collectors.toCollection(() -> EnumSet.noneOf(Material.class)));
     }
 
-    private static final List<Material> BAN_BLOCK_ENTITY = byName(
+    /**
+     * Block entities excluded from generation: scattered over a whole SkyGrid they
+     * cost server ticks and client-side rendering for no gameplay value. They stay
+     * reachable as items in containers.
+     */
+    private static final EnumSet<Material> BAN_BLOCK_ENTITY = byName(
         // Containers / storage
         "BARREL", "DISPENSER", "DROPPER", "HOPPER",
         "CHISELED_BOOKSHELF", "DECORATED_POT", "CRAFTER", "LECTERN",
@@ -65,12 +83,16 @@ public class SkyGridGenerator extends ChunkGenerator {
         "CREAKING_HEART", "COPPER_GOLEM_STATUE", "END_GATEWAY",
         "COMMAND_BLOCK", "CHAIN_COMMAND_BLOCK", "REPEATING_COMMAND_BLOCK",
         "JIGSAW", "STRUCTURE_BLOCK"
-    ).toList();
+    );
 
+    /** Containers kept despite the ban above, few enough to be harmless, and filled by {@link ContainerPopulator}. */
+    private static final EnumSet<Material> KEEP_CONTAINERS = byName("CHEST", "TRAPPED_CHEST", "ENDER_CHEST", "COPPER_CHEST");
 
-    private static final List<Material> KEEP_CONTAINERS = byName("CHEST", "TRAPPED_CHEST").toList();
+    /** Fluids kept despite failing isSolid(). */
+    private static final EnumSet<Material> KEEP_LIQUIDS = EnumSet.of(Material.WATER, Material.LAVA);
 
-    private static boolean isBlockEntity(final Material material) {
+    /** Whether the material is one of the block entities excluded above, directly or through a tag. */
+    private static boolean isBannedBlockEntity(final Material material) {
         return BAN_BLOCK_ENTITY.contains(material)
             || Tag.SIGNS.isTagged(material)
             || Tag.ALL_HANGING_SIGNS.isTagged(material)
@@ -80,14 +102,10 @@ public class SkyGridGenerator extends ChunkGenerator {
             || Tag.CAMPFIRES.isTagged(material);
     }
 
-    /**
-     * List of materials whose installation is prohibited in the world.
-     */
-    private static final List<Material> BAN_BLOCK_LIST = Arrays.asList(
+    /** Materials whose placement is forbidden in the world. */
+    private static final EnumSet<Material> BANNED_BLOCKS = EnumSet.of(
             Material.AIR,
             Material.BEDROCK,
-//            Material.WATER,
-//            Material.LAVA,
             Material.BEACON,
             Material.BARRIER,
             Material.DRAGON_EGG,
@@ -96,14 +114,22 @@ public class SkyGridGenerator extends ChunkGenerator {
             Material.WRITTEN_BOOK,
             Material.TRIAL_SPAWNER,
             Material.VAULT,
-            Material.END_PORTAL,
-            Material.COMMAND_BLOCK_MINECART
+            Material.END_GATEWAY,
+            Material.PISTON_HEAD
     );
 
-    /**
-     * List of materials block to be considered as items.
-     */
-    private static final List<Material> FORCE_ITEM_LIST = Arrays.asList(
+    /** Whether the material must never be placed, by name pattern or explicit listing. */
+    private static boolean isBannedBlock(final Material material) {
+        final String materialName = material.name().toUpperCase();
+
+        return materialName.contains("COMMAND_BLOCK") // all three command block variants
+            || materialName.contains("STRUCTURE") // structure block and void
+            || materialName.contains("END_PORTAL") // portal and frame
+            || BANNED_BLOCKS.contains(material);
+    }
+
+    /** Materials treated as items rather than placeable blocks. */
+    private static final EnumSet<Material> FORCE_ITEMS = EnumSet.of(
             Material.TORCH,
             Material.REDSTONE_TORCH,
             Material.LILY_PAD,
@@ -124,6 +150,11 @@ public class SkyGridGenerator extends ChunkGenerator {
             Material.VINE
     );
 
+    /**
+     * Whether the material should go to containers instead of being placed.
+     * Covers blocks needing a support face, which would break on the first
+     * neighbour update in a SkyGrid.
+     */
     private static boolean isForcedItem(final Material material) {
         return Tag.DOORS.isTagged(material)
             || Tag.TRAPDOORS.isTagged(material)
@@ -136,52 +167,50 @@ public class SkyGridGenerator extends ChunkGenerator {
             || Tag.STONE_PRESSURE_PLATES.isTagged(material)
             || Tag.PRESSURE_PLATES.isTagged(material)
             || Tag.BEDS.isTagged(material)
-            || FORCE_ITEM_LIST.contains(material);
+            || Tag.CORALS.isTagged(material)
+            || Tag.CORAL_BLOCKS.isTagged(material)
+            || Tag.CORAL_PLANTS.isTagged(material)
+            || material.name().toUpperCase().contains("CORAL") // dead variants aren't in any coral tag, hence the name check
+            || FORCE_ITEMS.contains(material);
     }
 
-    /**
-     * List of creatures prohibited from spawning.
-     */
-    private static final List<EntityType> BAN_CREATURE_LIST = Arrays.asList(
+    /** Creatures forbidden from spawning, bosses and unused entities. */
+    private static final EnumSet<EntityType> BAN_CREATURES = EnumSet.of(
             EntityType.ENDER_DRAGON,
             EntityType.GIANT
     );
 
-    /**
-     * Block to build the world.
-     */
+    /** Materials the grid is built from, resolved once at class loading. */
     public static final Material[] BLOCKS = Arrays.stream(Material.values())
         .filter(material -> !material.isLegacy())
         .filter(material -> !material.isAir())
-        .filter(Material::isBlock)
-        .filter(Material::isSolid)
-        .filter(material -> !BAN_BLOCK_LIST.contains(material))
-        .filter(material -> !isBlockEntity(material) || KEEP_CONTAINERS.contains(material))
+        .filter(material -> (material.isBlock() && material.isSolid()) || KEEP_LIQUIDS.contains(material))
+        .filter(material -> !isBannedBlock(material))
+        .filter(material -> !isBannedBlockEntity(material) || KEEP_CONTAINERS.contains(material))
         .filter(material -> !isForcedItem(material))
         .toArray(Material[]::new);
 
-    /**
-     * Items to be placed in containers
-     */
+    /** Materials the populator can put inside generated containers. */
     public static final Material[] ITEMS = Arrays.stream(Material.values())
         .filter(material -> !material.isLegacy())
         .filter(material -> !material.isAir())
         .filter(Material::isItem)
         .filter(material -> !material.isBlock() || !material.isSolid()
-                            || isForcedItem(material) || isBlockEntity(material))
-        .filter(material -> !BAN_BLOCK_LIST.contains(material))
+                            || isForcedItem(material) || isBannedBlockEntity(material))
+        .filter(material -> !isBannedBlock(material))
         .toArray(Material[]::new);
 
-    /**
-     * Creature allowed to spawn with mob spawner.
-     */
+    /** Creatures a generated spawner may be assigned. */
     public static final EntityType[] CREATURES = Arrays.stream(EntityType.values())
         .filter(creature -> creature.getEntityClass() != null)
         .filter(creature -> Mob.class.isAssignableFrom(creature.getEntityClass()))
-        .filter(creature -> !SkyGridGenerator.BAN_CREATURE_LIST.contains(creature))
+        .filter(creature -> !SkyGridGenerator.BAN_CREATURES.contains(creature))
         .toArray(EntityType[]::new);
 
+    /** Fills generated containers with random items. */
     private final ContainerPopulator skyGridPopulator;
+
+    /** Assigns a random creature to generated spawners. */
     private final SpawnerPopulator spawnerPopulator;
 
     public SkyGridGenerator() {
@@ -195,6 +224,7 @@ public class SkyGridGenerator extends ChunkGenerator {
 //                chunkData.setBlock(x, y, z, Material.GLASS);
 //    }
 
+    /** Places one block, adjusting block data that would otherwise decay or misbehave. */
     private void generateSkygridBlock(final ChunkData chunkData, final Material material, final int x, final int y, final int z) {
         final BlockData blockData = material.createBlockData();
         final Leaves leaves;
@@ -218,12 +248,17 @@ public class SkyGridGenerator extends ChunkGenerator {
         chunkData.setBlock(x, y, z, blockData);
     }
 
+    /** Fills one horizontal layer of the chunk, one block every 4 on X and Z. */
     private void generateSkyGrid(final ChunkData chunkData, final Random random, final int y) {
         for (int z = 0; z < 16; z += 4)
             for (int x = 0; x < 16; x += 4)
                  generateSkygridBlock(chunkData, SkyGridGenerator.BLOCKS[random.nextInt(SkyGridGenerator.BLOCKS.length)], x, y, z);
     }
 
+    /**
+     * Builds the whole grid in a single pass; the other generation stages are
+     * unused.
+     */
     @Override
     public void generateNoise(final WorldInfo worldInfo, final Random randomSeed, final int chunkX, final int chunkZ, final ChunkData chunkData) {
         final Random random = new Random();
@@ -240,17 +275,17 @@ public class SkyGridGenerator extends ChunkGenerator {
 
     @Override
     public void generateBedrock(final WorldInfo worldInfo, final Random randomSeed, final int chunkX, final int chunkZ, final ChunkData chunkData) {
-
+        // no bedrock layer in a SkyGrid
     }
 
     @Override
     public void generateCaves(final WorldInfo worldInfo, final Random randomSeed, final int chunkX, final int chunkZ, final ChunkData chunkData) {
-
+        // nothing to carve, everything is already air
     }
 
     @Override
     public void generateSurface(final WorldInfo worldInfo, final Random randomSeed, final int chunkX, final int chunkZ, final ChunkData chunkData) {
-
+        // no surface, the grid has no ground level
     }
 
     @Override
@@ -258,6 +293,7 @@ public class SkyGridGenerator extends ChunkGenerator {
         return new Location(world, 0, world.getMaxHeight() - 2, 0);
     }
 
+    /** Only grid positions can host a spawn, since everything else is air. */
     @Override
     public boolean canSpawn(World world, int x, int z) {
         return x % 4 == 0 && z % 4 == 0;
