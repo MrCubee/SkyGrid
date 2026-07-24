@@ -12,7 +12,9 @@ jobs:
         uses: devcontainers/ci@v0.3
         with:
           push: never
-          runCmd: ./gradlew --no-daemon build
+          runCmd: |
+            git config --global --add safe.directory "$PWD"
+            ./gradlew --no-daemon build
 
       - name: Locate artifact
         id: jar
